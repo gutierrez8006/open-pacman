@@ -1,6 +1,6 @@
 # SPEC 01 — Cuatro fantasmas con IA propia
 
-> **Status:** Draft
+> **Status:** Aprobado
 > **Depends on:** —
 > **Date:** 2026-09-22
 > **Objective:** Sustituir los 2 fantasmas actuales por 4 con IA distinta (agresor, emboscador, flanqueador y tímido) y liberación escalonada desde la pen.

@@ -43,6 +43,7 @@ function createGame() {
       speed: GHOST_SPEED,
       kind: g.kind,
       type: g.type,
+      inPen: true,
     } ) ),
   };
 }
@@ -127,9 +128,30 @@ function targetFor( game, g ) {
     const y = Math.max( 0, Math.min( H - 1, Math.round( p.y ) + d.y * 4 ) );
     return { x, y };
   }
-  // flanqueador y timido se implementan en el paso 3; de momento usan kind.
-  if ( g.kind === 'hunter' ) return { x: Math.round( p.x ), y: Math.round( p.y ) };
-  return null; // vaga (random)
+  if ( g.type === 'flanqueador' ) {
+    const agresor = game.ghosts.find( ( o ) => o.type === 'agresor' );
+    const agresorStart = GHOST_STARTS.find( ( s ) => s.type === 'agresor' );
+    // Si el agresor sigue en la pen se usa su celda de inicio como referencia.
+    const refX = agresor && !agresor.inPen ? Math.round( agresor.x ) : agresorStart.x;
+    const refY = agresor && !agresor.inPen ? Math.round( agresor.y ) : agresorStart.y;
+    const d = DIRS[ p.dir ] || { x: 0, y: 0 };
+    const targetX = 2 * ( Math.round( p.x ) + d.x * 2 ) - refX;
+    const targetY = 2 * ( Math.round( p.y ) + d.y * 2 ) - refY;
+    return {
+      x: Math.max( 0, Math.min( W - 1, targetX ) ),
+      y: Math.max( 0, Math.min( H - 1, targetY ) ),
+    };
+  }
+  if ( g.type === 'timido' ) {
+    const dx = p.x - g.x;
+    const dy = p.y - g.y;
+    // Persigue directo solo si esta lejos de pacman; si no, vaga (random).
+    if ( Math.sqrt( dx * dx + dy * dy ) > 8 ) {
+      return { x: Math.round( p.x ), y: Math.round( p.y ) };
+    }
+    return null;
+  }
+  return null; // vaga (random) — sin tipo reconocido
 }
 
 function decideGhost( game, g ) {

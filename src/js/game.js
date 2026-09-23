@@ -46,7 +46,6 @@ function createGame() {
       y: g.y,
       dir: 'up',
       speed: GHOST_SPEED,
-      kind: g.kind,
       type: g.type,
       release: g.release,
       inPen: true,

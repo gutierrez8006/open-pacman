@@ -86,3 +86,7 @@ Variables globales exportadas en `window` no cambian de nombre.
 - Cambios en la geometría del laberinto.
 
 Cada uno de esos, si llega, va en su propia spec.
+
+## Nota para futuras specs
+
+- **Clamp de `dt`:** `update( game, dt )` acumula tiempo real sin limitar `dt`. Si la pestaña queda en segundo plano varios segundos, al volver el reloj salta y se liberan los fantasmas que correspondan de golpe. En una spec futura: acotar `dt` (p. ej. máximo ~0.1s) para evitar el salto.

@@ -111,9 +111,29 @@ function movePacman( game ) {
   wrapTunnel( p, width );
 }
 
+// Celda objetivo del fantasma segun su tipo.
+function targetFor( game, g ) {
+  const p = game.pacman;
+  const grid = game.grid;
+  const W = grid[ 0 ].length;
+  const H = grid.length;
+
+  if ( g.type === 'agresor' ) {
+    return { x: Math.round( p.x ), y: Math.round( p.y ) };
+  }
+  if ( g.type === 'emboscador' ) {
+    const d = DIRS[ p.dir ] || { x: 0, y: 0 };
+    const x = Math.max( 0, Math.min( W - 1, Math.round( p.x ) + d.x * 4 ) );
+    const y = Math.max( 0, Math.min( H - 1, Math.round( p.y ) + d.y * 4 ) );
+    return { x, y };
+  }
+  // flanqueador y timido se implementan en el paso 3; de momento usan kind.
+  if ( g.kind === 'hunter' ) return { x: Math.round( p.x ), y: Math.round( p.y ) };
+  return null; // vaga (random)
+}
+
 function decideGhost( game, g ) {
   const grid = game.grid;
-  const p = game.pacman;
 
   const options = Object.keys( DIRS ).filter(
     ( dir ) => dir !== OPPOSITE[ g.dir ] && canMove( grid, g.x, g.y, dir, 'ghost' )
@@ -121,25 +141,25 @@ function decideGhost( game, g ) {
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
 
-  if ( g.kind === 'hunter' ) {
-    const px = Math.round( p.x );
-    const py = Math.round( p.y );
-    let best = choices[ 0 ];
-    let bestDist = Infinity;
-    for ( const dir of choices ) {
-      const d = DIRS[ dir ];
-      const nx = g.x + d.x;
-      const ny = g.y + d.y;
-      const dist = Math.abs( nx - px ) + Math.abs( ny - py );
-      if ( dist < bestDist ) {
-        bestDist = dist;
-        best = dir;
-      }
-    }
-    g.dir = best;
-  } else {
+  const target = targetFor( game, g );
+  if ( !target ) {
     g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+    return;
   }
+
+  let best = choices[ 0 ];
+  let bestDist = Infinity;
+  for ( const dir of choices ) {
+    const d = DIRS[ dir ];
+    const nx = g.x + d.x;
+    const ny = g.y + d.y;
+    const dist = Math.abs( nx - target.x ) + Math.abs( ny - target.y );
+    if ( dist < bestDist ) {
+      bestDist = dist;
+      best = dir;
+    }
+  }
+  g.dir = best;
 }
 
 function moveGhost( game, g ) {

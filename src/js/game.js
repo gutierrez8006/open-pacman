@@ -77,6 +77,11 @@ function canMove( grid, x, y, dir, actor ) {
   const ty = y + d.y;
   // Tunel: salir por un borde en la fila del tunel siempre es valido.
   if ( ty === TUNNEL_ROW && ( tx < 0 || tx >= grid[ 0 ].length ) ) return true;
+  // Puerta de un solo sentido: un fantasma fuera de la pen no puede volver
+  // a entrar ni a las celdas de la puerta.
+  if ( actor === 'ghost' && !inPenRect( x, y ) ) {
+    if ( isDoorCell( tx, ty ) || inPenRect( tx, ty ) ) return false;
+  }
   return !isWall( grid, tx, ty, actor );
 }
 
@@ -117,11 +122,14 @@ function movePacman( game ) {
   wrapTunnel( p, width );
 }
 
+// Esta la celda dentro del rectangulo interior de la pen?
+function inPenRect( x, y ) {
+  return x >= PEN.x0 && x <= PEN.x1 && y >= PEN.y0 && y <= PEN.y1;
+}
+
 // Sigue dentro del rectangulo interior de la pen?
 function inPen( g ) {
-  const x = Math.round( g.x );
-  const y = Math.round( g.y );
-  return x >= PEN.x0 && x <= PEN.x1 && y >= PEN.y0 && y <= PEN.y1;
+  return inPenRect( Math.round( g.x ), Math.round( g.y ) );
 }
 
 // Es una celda de puerta del laberinto? (fila PEN.doorY, cols PEN.doorX y PEN.doorX + 1)

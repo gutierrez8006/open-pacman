@@ -124,6 +124,11 @@ function inPen( g ) {
   return x >= PEN.x0 && x <= PEN.x1 && y >= PEN.y0 && y <= PEN.y1;
 }
 
+// Es una celda de puerta del laberinto? (fila PEN.doorY, cols PEN.doorX y PEN.doorX + 1)
+function isDoorCell( x, y ) {
+  return y === PEN.doorY && ( x === PEN.doorX || x === PEN.doorX + 1 );
+}
+
 // Celda objetivo del fantasma segun su tipo.
 function targetFor( game, g ) {
   const p = game.pacman;
@@ -211,7 +216,13 @@ function moveGhost( game, g ) {
       if ( game.elapsed >= g.release ) g.inPen = false;
       else return;
     }
-    decideGhost( game, g );
+    // Celda de puerta: forzar la salida hacia arriba (unica salida valida),
+    // ignorando el greedy.
+    if ( isDoorCell( g.x, g.y ) ) {
+      g.dir = 'up';
+    } else {
+      decideGhost( game, g );
+    }
     if ( !canMove( grid, g.x, g.y, g.dir, 'ghost' ) ) return;
   }
 

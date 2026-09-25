@@ -5,6 +5,10 @@ const TILE = 20;
 const WALL_COLOR = '#2121ff';
 const DOOR_COLOR = '#ffb8ff';
 const DOT_COLOR = '#ffb897';
+// Fantasma asustado (SPEC 03): azul con parpadeo blanco al final.
+const FRIGHT_COLOR = '#2121ff';
+const FRIGHT_FLASH_COLOR = '#ffffff';
+const FRIGHT_BLINK_TIME = 2; // ultimos segundos en blanco
 
 function cellCenter( x, y ) {
   return { cx: x * TILE + TILE / 2, cy: y * TILE + TILE / 2 };
@@ -74,6 +78,22 @@ function drawDots( ctx, grid ) {
       const { cx, cy } = cellCenter( x, y );
       ctx.beginPath();
       ctx.arc( cx, cy, 2.5, 0, Math.PI * 2 );
+      ctx.fill();
+    }
+  }
+}
+
+// Power pellets: circulo grande (r≈6) que parpadea con el frame.
+function drawPellets( ctx, grid, frame ) {
+  ctx.fillStyle = DOT_COLOR;
+  const blink = Math.floor( frame / 15 ) % 2 === 0;
+  const r = blink ? 6 : 3.5;
+  for ( let y = 0; y < grid.length; y++ ) {
+    for ( let x = 0; x < grid[ 0 ].length; x++ ) {
+      if ( grid[ y ][ x ] !== 4 ) continue;
+      const { cx, cy } = cellCenter( x, y );
+      ctx.beginPath();
+      ctx.arc( cx, cy, r, 0, Math.PI * 2 );
       ctx.fill();
     }
   }
@@ -151,6 +171,17 @@ const GHOST_COLORS = {
   timido: '#ffb852',
 };
 
+// Color del fantasma: azul si hay frightened, blanco los ultimos 2 s.
+function ghostColor( game, frame, type ) {
+  if ( game.frightened && game.frightened.active ) {
+    if ( game.frightened.timer <= FRIGHT_BLINK_TIME ) {
+      return Math.floor( frame / 10 ) % 2 === 0 ? FRIGHT_FLASH_COLOR : FRIGHT_COLOR;
+    }
+    return FRIGHT_COLOR;
+  }
+  return GHOST_COLORS[ type ] || '#ff0000';
+}
+
 function draw( ctx, game, frame ) {
   const grid = game.grid;
   const W = grid[ 0 ].length;
@@ -162,8 +193,9 @@ function draw( ctx, game, frame ) {
   drawWalls( ctx, grid );
   drawDoor( ctx, grid );
   drawDots( ctx, grid );
+  drawPellets( ctx, grid, frame );
   drawPacman( ctx, game.pacman, frame );
-  game.ghosts.forEach( ( g ) => drawGhost( ctx, g, GHOST_COLORS[ g.type ] || '#ff0000' ) );
+  game.ghosts.forEach( ( g ) => drawGhost( ctx, g, ghostColor( game, frame, g.type ) ) );
   drawHUD( ctx, game, W );
 }
 

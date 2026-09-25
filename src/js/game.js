@@ -13,6 +13,13 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 
+// Power pellets (SPEC 03): 4 esquinas que activan frightened 7 s.
+const FRIGHTENED_DURATION = 7; // segundos
+const PELLET_SCORE = 50;
+const GHOST_FRIGHT_SPEED = 0.05; // mitad de GHOST_SPEED -> alinea cada 20 frames
+const GHOST_CHAIN = [ 200, 400, 800, 1600 ];
+const EATEN_RELEASE_DELAY = 1.5; // re-salida rapida tras ser comido
+
 // Rectangulo interior de la pen (sin la puerta): cols 11-16, filas 13-15.
 // Mientras un fantasma este dentro, apunta a la puerta (13,12) para salir sola.
 const PEN = { x0: 11, x1: 16, y0: 13, y1: 15, doorX: 13, doorY: 12 };
@@ -25,13 +32,19 @@ function createGame() {
   grid[ PACMAN_START.y ][ PACMAN_START.x ] = 0;
 
   let dots = 0;
-  for ( const row of grid ) for ( const v of row ) if ( v === 2 ) dots++;
+  let pellets = 0;
+  for ( const row of grid ) for ( const v of row ) {
+    if ( v === 2 ) dots++;
+    if ( v === 4 ) pellets++;
+  }
 
   return {
     state: 'start',
     score: 0,
     lives: 3,
     dotsRemaining: dots,
+    pelletsRemaining: pellets,
+    frightened: { active: false, timer: 0, chain: 0 },
     elapsed: 0,
     grid,
     pacman: {
@@ -112,6 +125,15 @@ function movePacman( game ) {
       game.score += 10;
       game.dotsRemaining--;
     }
+    // Comer power pellet: 50 puntos y activa (o reinicia) frightened 7 s.
+    if ( grid[ p.y ][ p.x ] === 4 ) {
+      grid[ p.y ][ p.x ] = 0;
+      game.score += PELLET_SCORE;
+      game.pelletsRemaining--;
+      game.frightened.active = true;
+      game.frightened.timer = FRIGHTENED_DURATION;
+      game.frightened.chain = 0;
+    }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, p.x, p.y, p.dir, 'pacman' ) ) return;
   }
@@ -146,6 +168,9 @@ function targetFor( game, g ) {
 
   // Salida de la pen: mientras este dentro, apunta a la puerta.
   if ( inPen( g ) ) return { x: PEN.doorX, y: PEN.doorY };
+
+  // Asustado: vaga en aleatorio (sin objetivo).
+  if ( game.frightened && game.frightened.active ) return null;
 
   if ( g.type === 'agresor' ) {
     return { x: Math.round( p.x ), y: Math.round( p.y ) };
@@ -235,8 +260,10 @@ function moveGhost( game, g ) {
   }
 
   const d = DIRS[ g.dir ];
-  g.x += d.x * g.speed;
-  g.y += d.y * g.speed;
+  // Asustado: mitad de velocidad para dar ventaja a Pac-Man.
+  const speed = ( game.frightened && game.frightened.active ) ? GHOST_FRIGHT_SPEED : g.speed;
+  g.x += d.x * speed;
+  g.y += d.y * speed;
   wrapTunnel( g, width );
 }
 
@@ -262,22 +289,43 @@ function collides( a, b ) {
 
 function update( game, dt ) {
   game.elapsed += dt;
+  // Timer de frightened: al agotarse vuelve a IA y velocidad normales.
+  if ( game.frightened && game.frightened.active ) {
+    game.frightened.timer -= dt;
+    if ( game.frightened.timer <= 0 ) {
+      game.frightened.timer = 0;
+      game.frightened.active = false;
+    }
+  }
   movePacman( game );
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
-  for ( const g of game.ghosts ) {
-    if ( collides( game.pacman, g ) ) {
-      game.lives--;
-      if ( game.lives <= 0 ) {
-        game.state = 'lost';
-        return;
-      }
-      resetPositions( game );
-      break;
+  for ( let i = 0; i < game.ghosts.length; i++ ) {
+    const g = game.ghosts[ i ];
+    if ( !collides( game.pacman, g ) ) continue;
+    // Asustado: comer en cadena y devolver a la pen por teleporte.
+    if ( game.frightened && game.frightened.active ) {
+      const idx = Math.min( game.frightened.chain, GHOST_CHAIN.length - 1 );
+      game.score += GHOST_CHAIN[ idx ];
+      game.frightened.chain++;
+      g.x = GHOST_STARTS[ i ].x;
+      g.y = GHOST_STARTS[ i ].y;
+      g.dir = 'up';
+      g.inPen = true;
+      g.release = game.elapsed + EATEN_RELEASE_DELAY;
+      continue;
     }
+    game.lives--;
+    if ( game.lives <= 0 ) {
+      game.state = 'lost';
+      return;
+    }
+    resetPositions( game );
+    break;
   }
 
-  if ( game.dotsRemaining <= 0 ) game.state = 'won';
+  // Victoria solo sin dots ni pellets (los pellets estaban sobre dots).
+  if ( game.dotsRemaining <= 0 && ( game.pelletsRemaining || 0 ) <= 0 ) game.state = 'won';
 }
 
 window.createGame = createGame;

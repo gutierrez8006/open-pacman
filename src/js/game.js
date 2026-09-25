@@ -324,7 +324,8 @@ function update( game, dt ) {
     break;
   }
 
-  if ( game.dotsRemaining <= 0 ) game.state = 'won';
+  // Victoria solo sin dots ni pellets (los pellets estaban sobre dots).
+  if ( game.dotsRemaining <= 0 && ( game.pelletsRemaining || 0 ) <= 0 ) game.state = 'won';
 }
 
 window.createGame = createGame;

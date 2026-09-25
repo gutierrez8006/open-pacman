@@ -13,6 +13,10 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 
+// Power pellets (SPEC 03): 4 esquinas que activan frightened 7 s.
+const FRIGHTENED_DURATION = 7; // segundos
+const PELLET_SCORE = 50;
+
 // Rectangulo interior de la pen (sin la puerta): cols 11-16, filas 13-15.
 // Mientras un fantasma este dentro, apunta a la puerta (13,12) para salir sola.
 const PEN = { x0: 11, x1: 16, y0: 13, y1: 15, doorX: 13, doorY: 12 };
@@ -25,13 +29,19 @@ function createGame() {
   grid[ PACMAN_START.y ][ PACMAN_START.x ] = 0;
 
   let dots = 0;
-  for ( const row of grid ) for ( const v of row ) if ( v === 2 ) dots++;
+  let pellets = 0;
+  for ( const row of grid ) for ( const v of row ) {
+    if ( v === 2 ) dots++;
+    if ( v === 4 ) pellets++;
+  }
 
   return {
     state: 'start',
     score: 0,
     lives: 3,
     dotsRemaining: dots,
+    pelletsRemaining: pellets,
+    frightened: { active: false, timer: 0, chain: 0 },
     elapsed: 0,
     grid,
     pacman: {
@@ -111,6 +121,15 @@ function movePacman( game ) {
       grid[ p.y ][ p.x ] = 0;
       game.score += 10;
       game.dotsRemaining--;
+    }
+    // Comer power pellet: 50 puntos y activa (o reinicia) frightened 7 s.
+    if ( grid[ p.y ][ p.x ] === 4 ) {
+      grid[ p.y ][ p.x ] = 0;
+      game.score += PELLET_SCORE;
+      game.pelletsRemaining--;
+      game.frightened.active = true;
+      game.frightened.timer = FRIGHTENED_DURATION;
+      game.frightened.chain = 0;
     }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, p.x, p.y, p.dir, 'pacman' ) ) return;

@@ -22,6 +22,7 @@ const START_KEYS = [ ' ', 'Spacebar' ];
 
 document.addEventListener( 'keydown', ( e ) => {
   const isStartKey = START_KEYS.includes( e.key ) || e.code === 'Space';
+  if ( isStartKey && !e.repeat && game.state !== 'playing' ) startGame();
   if ( isStartKey ) return;
   const dir = KEY_DIR[ e.key ];
   if ( !dir ) return;

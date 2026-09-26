@@ -17,7 +17,14 @@ const KEY_DIR = {
   ArrowDown: 'down',
 };
 
+// e.key de la barra espaciadora (' ' y el nombre antiguo de navegadores viejos)
+const START_KEYS = [ ' ', 'Spacebar' ];
+
 document.addEventListener( 'keydown', ( e ) => {
+  const isStartKey = START_KEYS.includes( e.key ) || e.code === 'Space';
+  if ( isStartKey ) e.preventDefault();
+  if ( isStartKey && !e.repeat && game.state !== 'playing' ) startGame();
+  if ( isStartKey ) return;
   const dir = KEY_DIR[ e.key ];
   if ( !dir ) return;
   e.preventDefault();
@@ -27,7 +34,8 @@ document.addEventListener( 'keydown', ( e ) => {
 function showOverlay( title, cls, btnLabel ) {
   overlay.innerHTML =
     '<h1' + ( cls ? ' class="' + cls + '"' : '' ) + '>' + title + '</h1>' +
-    '<button id="action-btn">' + btnLabel + '</button>';
+    '<button id="action-btn">' + btnLabel + '</button>' +
+    '<p class="hint">Pulsa Espacio para empezar</p>';
   overlay.classList.add( 'show' );
   document.getElementById( 'action-btn' ).addEventListener( 'click', startGame );
 }

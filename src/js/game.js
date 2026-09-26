@@ -44,7 +44,7 @@ function createGame() {
     lives: 3,
     dotsRemaining: dots,
     pelletsRemaining: pellets,
-    frightened: { active: false, timer: 0, chain: 0 },
+    frightened: { active: false, timer: 0, chain: 0, wasActive: false },
     elapsed: 0,
     grid,
     pacman: {
@@ -308,6 +308,16 @@ function update( game, dt ) {
     }
   }
   movePacman( game );
+  // Velocidad al centro de la celda en el frame del cambio (SPEC 05). Sin esto,
+  // el resto de 0.05 que deja el frightened no pertenece a la retícula de 0.1:
+  // el fantasma deja de alinear, no pasa la comprobacion de muros y se va del
+  // laberinto. Va entre movePacman y moveGhost para cubrir las dos aristas:
+  // fin de timer y pellet comido, ambas en este frame.
+  if ( game.frightened && game.frightened.active !== game.frightened.wasActive ) {
+    const width = game.grid[ 0 ].length;
+    game.ghosts.forEach( ( g ) => snapToCell( g, width ) );
+    game.frightened.wasActive = game.frightened.active;
+  }
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
   for ( let i = 0; i < game.ghosts.length; i++ ) {

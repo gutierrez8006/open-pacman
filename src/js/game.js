@@ -290,6 +290,9 @@ function resetPositions( game ) {
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
     g.inPen = true;
+    // Tambien su release original (2/5/10/15): si no, un fantasma comido
+    // espera su fecha absoluta (game.elapsed + 1.5) y no sale de la pen.
+    g.release = GHOST_STARTS[ i ].release;
   } );
 }
 

@@ -34,7 +34,8 @@ document.addEventListener( 'keydown', ( e ) => {
 function showOverlay( title, cls, btnLabel ) {
   overlay.innerHTML =
     '<h1' + ( cls ? ' class="' + cls + '"' : '' ) + '>' + title + '</h1>' +
-    '<button id="action-btn">' + btnLabel + '</button>';
+    '<button id="action-btn">' + btnLabel + '</button>' +
+    '<p class="hint">Pulsa Espacio para empezar</p>';
   overlay.classList.add( 'show' );
   document.getElementById( 'action-btn' ).addEventListener( 'click', startGame );
 }

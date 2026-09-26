@@ -44,7 +44,7 @@ function createGame() {
     lives: 3,
     dotsRemaining: dots,
     pelletsRemaining: pellets,
-    frightened: { active: false, timer: 0, chain: 0 },
+    frightened: { active: false, timer: 0, chain: 0, wasActive: false },
     elapsed: 0,
     grid,
     pacman: {
@@ -103,6 +103,16 @@ function wrapTunnel( a, width ) {
     if ( a.x < 0 ) a.x += width;
     else if ( a.x >= width ) a.x -= width;
   }
+}
+
+// Pega al actor al centro de su celda (SPEC 05). La x solo se redondea si la
+// celda redondeada cae dentro del grid: en el borde del tunel (27.5 -> 28) se
+// conserva la fraccionaria para no meter al actor fuera del laberinto.
+function snapToCell( a, width ) {
+  const rx = Math.round( a.x );
+  if ( rx >= 0 && rx < width ) a.x = rx;
+  a.y = Math.round( a.y );
+  wrapTunnel( a, width );
 }
 
 function movePacman( game ) {
@@ -280,6 +290,9 @@ function resetPositions( game ) {
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
     g.inPen = true;
+    // Tambien su release original (2/5/10/15): si no, un fantasma comido
+    // espera su fecha absoluta (game.elapsed + 1.5) y no sale de la pen.
+    g.release = GHOST_STARTS[ i ].release;
   } );
 }
 
@@ -298,6 +311,16 @@ function update( game, dt ) {
     }
   }
   movePacman( game );
+  // Velocidad al centro de la celda en el frame del cambio (SPEC 05). Sin esto,
+  // el resto de 0.05 que deja el frightened no pertenece a la retícula de 0.1:
+  // el fantasma deja de alinear, no pasa la comprobacion de muros y se va del
+  // laberinto. Va entre movePacman y moveGhost para cubrir las dos aristas:
+  // fin de timer y pellet comido, ambas en este frame.
+  if ( game.frightened && game.frightened.active !== game.frightened.wasActive ) {
+    const width = game.grid[ 0 ].length;
+    game.ghosts.forEach( ( g ) => snapToCell( g, width ) );
+    game.frightened.wasActive = game.frightened.active;
+  }
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
   for ( let i = 0; i < game.ghosts.length; i++ ) {

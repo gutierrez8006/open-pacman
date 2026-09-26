@@ -17,7 +17,12 @@ const KEY_DIR = {
   ArrowDown: 'down',
 };
 
+// e.key de la barra espaciadora (' ' y el nombre antiguo de navegadores viejos)
+const START_KEYS = [ ' ', 'Spacebar' ];
+
 document.addEventListener( 'keydown', ( e ) => {
+  const isStartKey = START_KEYS.includes( e.key ) || e.code === 'Space';
+  if ( isStartKey ) return;
   const dir = KEY_DIR[ e.key ];
   if ( !dir ) return;
   e.preventDefault();

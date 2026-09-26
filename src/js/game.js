@@ -105,6 +105,16 @@ function wrapTunnel( a, width ) {
   }
 }
 
+// Pega al actor al centro de su celda (SPEC 05). La x solo se redondea si la
+// celda redondeada cae dentro del grid: en el borde del tunel (27.5 -> 28) se
+// conserva la fraccionaria para no meter al actor fuera del laberinto.
+function snapToCell( a, width ) {
+  const rx = Math.round( a.x );
+  if ( rx >= 0 && rx < width ) a.x = rx;
+  a.y = Math.round( a.y );
+  wrapTunnel( a, width );
+}
+
 function movePacman( game ) {
   const p = game.pacman;
   const grid = game.grid;
